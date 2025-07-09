@@ -80,11 +80,19 @@ export default function Dashboard() {
   const testPromptMutation = useMutation({
     mutationFn: async (data: { scenarioId: number; userInput: string }) => {
       const res = await apiRequest("POST", "/api/test-prompt", data);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to generate AI response");
+      }
       return res.json();
     },
     onSuccess: (data) => {
       setTestResult(data);
       queryClient.invalidateQueries({ queryKey: ["/api/testing-stats"] });
+    },
+    onError: (error) => {
+      console.error("Error testing prompt:", error);
+      // You could add toast notification here if needed
     },
   });
 
@@ -278,11 +286,14 @@ export default function Dashboard() {
                   className="w-full bg-medical-blue-500 hover:bg-medical-blue-600"
                 >
                   {testPromptMutation.isPending ? (
-                    "Running Safety Evaluation..."
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Generating AI Response & Running Safety Evaluation...
+                    </>
                   ) : (
                     <>
                       <span className="mr-2">▶</span>
-                      Run Safety Evaluation Test
+                      Test Patient Input with AI
                     </>
                   )}
                 </Button>
