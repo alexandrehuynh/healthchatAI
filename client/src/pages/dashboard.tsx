@@ -151,19 +151,19 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className="frosted-glass sticky top-0 z-50 border-b border-white/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <Heart className="h-8 w-8 text-medical-blue-500 mr-3" />
-              <span className="text-xl font-semibold text-gray-900">HealthAI Prompt Tester</span>
+              <span className="gradient-text text-xl">HealthAI Prompt Tester</span>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-500">Clinical Safety Validation Platform</span>
-              <div className="h-8 w-8 bg-medical-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-medium">U</span>
+              <span className="text-sm text-gray-600 font-medium">Clinical Safety Validation Platform</span>
+              <div className="h-9 w-9 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
+                <span className="text-white text-sm font-bold">U</span>
               </div>
             </div>
           </div>
@@ -177,11 +177,11 @@ export default function Dashboard() {
           <div className="lg:col-span-1 space-y-6">
             
             {/* Prompt Category Selection */}
-            <Card>
+            <Card className="frosted-glass hover-lift">
               <CardHeader>
                 <CardTitle className="flex items-center text-lg">
                   <Clipboard className="h-5 w-5 text-medical-blue-500 mr-2" />
-                  Prompt Categories
+                  <span className="gradient-text">Prompt Categories</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -208,11 +208,11 @@ export default function Dashboard() {
             </Card>
 
             {/* Test Scenarios */}
-            <Card>
+            <Card className="frosted-glass hover-lift">
               <CardHeader>
                 <CardTitle className="flex items-center text-lg">
                   <FlaskConical className="h-5 w-5 text-medical-blue-500 mr-2" />
-                  Test Scenarios
+                  <span className="gradient-text">Test Scenarios</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -241,11 +241,11 @@ export default function Dashboard() {
           <div className="lg:col-span-2 space-y-6">
             
             {/* Prompt Testing Interface */}
-            <Card>
+            <Card className="frosted-glass hover-lift">
               <CardHeader>
                 <CardTitle className="flex items-center text-lg">
                   <Terminal className="h-5 w-5 text-medical-blue-500 mr-2" />
-                  Prompt Testing Interface
+                  <span className="gradient-text">Prompt Testing Interface</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -302,7 +302,7 @@ export default function Dashboard() {
                   <Button
                     onClick={handleTestPrompt}
                     disabled={!userInput.trim() || testPromptMutation.isPending}
-                    className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white font-semibold py-4 px-6 text-lg border border-green-700 shadow-md transition-all duration-200 hover:shadow-lg"
+                    className="modern-button w-full disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:scale-100"
                   >
                     {testPromptMutation.isPending ? (
                       <>
@@ -322,11 +322,11 @@ export default function Dashboard() {
 
             {/* AI Response & Safety Evaluation */}
             {testResult && (
-              <Card>
+              <Card className="frosted-glass hover-lift">
                 <CardHeader>
                   <CardTitle className="flex items-center text-lg">
                     <Shield className="h-5 w-5 text-healthcare-green-500 mr-2" />
-                    AI Response & Safety Evaluation
+                    <span className="gradient-text">AI Response & Safety Evaluation</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -344,35 +344,35 @@ export default function Dashboard() {
                   </div>
 
                   {/* Overall Safety Score - Prominent Display */}
-                  <div className="mb-6">
-                    <div className={`p-6 border-2 rounded-xl shadow-lg ${
+                  <div className="mb-8">
+                    <div className={`p-8 rounded-2xl shadow-xl border-2 smooth-transition hover-lift ${
                       testResult.overallScore >= 80 
-                        ? "border-green-400 bg-gradient-to-r from-green-50 to-emerald-50" 
+                        ? "border-green-400 bg-gradient-to-br from-green-50 via-emerald-50 to-green-100" 
                         : testResult.overallScore >= 60
-                        ? "border-yellow-400 bg-gradient-to-r from-yellow-50 to-amber-50"
-                        : "border-red-400 bg-gradient-to-r from-red-50 to-pink-50"
+                        ? "border-yellow-400 bg-gradient-to-br from-yellow-50 via-amber-50 to-yellow-100"
+                        : "border-red-400 bg-gradient-to-br from-red-50 via-pink-50 to-red-100"
                     }`}>
                       <div className="text-center">
-                        <div className="flex items-center justify-center mb-2">
+                        <div className="flex items-center justify-center mb-4">
                           {testResult.overallScore >= 80 ? (
-                            <CheckCircle className="h-8 w-8 text-green-600 mr-2" />
+                            <CheckCircle className="h-12 w-12 text-green-600 mr-3" />
                           ) : testResult.overallScore >= 60 ? (
-                            <AlertCircle className="h-8 w-8 text-yellow-600 mr-2" />
+                            <AlertCircle className="h-12 w-12 text-yellow-600 mr-3" />
                           ) : (
-                            <AlertCircle className="h-8 w-8 text-red-600 mr-2" />
+                            <AlertCircle className="h-12 w-12 text-red-600 mr-3" />
                           )}
-                          <div className={`text-4xl font-bold ${
-                            testResult.overallScore >= 80 ? "text-green-700" : 
-                            testResult.overallScore >= 60 ? "text-yellow-700" : "text-red-700"
-                          }`}>
+                          <div className={`text-6xl font-bold ${
+                            testResult.overallScore >= 80 ? "bg-gradient-to-r from-green-600 to-green-700" : 
+                            testResult.overallScore >= 60 ? "bg-gradient-to-r from-yellow-600 to-yellow-700" : "bg-gradient-to-r from-red-600 to-red-700"
+                          } bg-clip-text text-transparent`}>
                             {testResult.overallScore}%
                           </div>
                         </div>
-                        <div className="text-lg font-semibold text-gray-900 mb-1">
+                        <div className="text-xl font-bold text-gray-900 mb-2">
                           {testResult.overallScore >= 80 ? "✓ Safety Compliant" : 
                            testResult.overallScore >= 60 ? "⚠ Needs Review" : "✗ Safety Concerns"}
                         </div>
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-600 font-medium">
                           {safetyChecks.filter(check => check.data.passed).length} of {safetyChecks.length} criteria passed
                         </div>
                       </div>
@@ -429,38 +429,38 @@ export default function Dashboard() {
 
             {/* Test History & Analytics */}
             {stats && (
-              <Card>
+              <Card className="frosted-glass hover-lift">
                 <CardHeader>
                   <CardTitle className="flex items-center text-lg">
                     <BarChart3 className="h-5 w-5 text-medical-blue-500 mr-2" />
-                    Testing Analytics & Patterns
+                    <span className="gradient-text">Testing Analytics & Patterns</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Key Metrics */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                      <div className="text-3xl font-bold text-blue-700 mb-1">
+                    <div className="metric-card text-center hover-lift">
+                      <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-1">
                         {stats.totalTests}
                       </div>
-                      <div className="text-sm font-medium text-gray-700">Tests Completed</div>
+                      <div className="text-sm font-semibold text-gray-700">Tests Completed</div>
                       <div className="text-xs text-gray-500 mt-1">Total evaluations run</div>
                     </div>
-                    <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200">
-                      <div className="text-3xl font-bold text-green-700 mb-1">
+                    <div className="metric-card text-center hover-lift">
+                      <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent mb-1">
                         {stats.averageScore}%
                       </div>
-                      <div className="text-sm font-medium text-gray-700">Average Safety Score</div>
+                      <div className="text-sm font-semibold text-gray-700">Average Safety Score</div>
                       <div className="text-xs text-gray-500 mt-1">
                         {stats.averageScore >= 80 ? "Excellent compliance" : 
                          stats.averageScore >= 60 ? "Good compliance" : "Needs improvement"}
                       </div>
                     </div>
-                    <div className="text-center p-4 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg border border-amber-200">
-                      <div className="text-3xl font-bold text-amber-700 mb-1">
+                    <div className="metric-card text-center hover-lift">
+                      <div className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-amber-700 bg-clip-text text-transparent mb-1">
                         {stats.flaggedResponses}
                       </div>
-                      <div className="text-sm font-medium text-gray-700">Flagged Responses</div>
+                      <div className="text-sm font-semibold text-gray-700">Flagged Responses</div>
                       <div className="text-xs text-gray-500 mt-1">
                         {stats.totalTests > 0 ? `${Math.round((stats.flaggedResponses / stats.totalTests) * 100)}% of total` : "No data"}
                       </div>
