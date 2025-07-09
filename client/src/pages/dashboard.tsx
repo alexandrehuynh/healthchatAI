@@ -287,22 +287,22 @@ export default function Dashboard() {
                 </div>
 
                 {/* Test Button */}
-                <div className="border-t pt-4 mt-4">
+                <div className="border-t border-gray-200 pt-6 mt-6">
                   <Button
                     onClick={handleTestPrompt}
                     disabled={!userInput.trim() || testPromptMutation.isPending}
-                    className="w-full bg-medical-blue-600 hover:bg-medical-blue-700 text-white font-medium py-4 text-base border-0 shadow-sm transition-colors"
+                    className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white font-semibold py-4 px-6 text-lg border border-green-700 shadow-md transition-all duration-200 hover:shadow-lg"
                   >
                     {testPromptMutation.isPending ? (
                       <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Generating Response...
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                        <span className="font-medium">Generating Response...</span>
                       </>
                     ) : (
-                      "Generate AI Response"
+                      <span className="font-bold">Generate AI Response</span>
                     )}
                   </Button>
-                  <p className="text-center text-sm text-gray-600 mt-3">
+                  <p className="text-center text-sm text-gray-700 mt-3 font-medium">
                     Test your patient input with AI safety evaluation
                   </p>
                 </div>
