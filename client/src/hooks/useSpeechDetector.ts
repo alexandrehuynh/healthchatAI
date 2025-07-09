@@ -486,8 +486,16 @@ export const useSpeechDetector = (
   const detectorRef = useRef<HybridSpeechDetector | null>(null);
   const lastNotifiedTranscript = useRef<string>('');
 
-  // Initialize detector
+  // Initialize detector once
   useEffect(() => {
+    // Check browser support first
+    const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionClass) {
+      setIsSupported(false);
+      setError('Speech recognition not supported in this browser');
+      return;
+    }
+
     const defaultConfig: SpeechDetectorConfig = {
       continuous: true,
       interimResults: true,
@@ -503,9 +511,6 @@ export const useSpeechDetector = (
 
     // Set up callbacks
     detectorRef.current.setOnTranscriptUpdate((result: TranscriptResult) => {
-      const fullTranscript = result.finalTranscript + 
-                           (result.interimTranscript ? ' ' + result.interimTranscript : '');
-      
       setCurrentTranscript(result.finalTranscript);
       setInterimTranscript(result.interimTranscript);
       
@@ -527,6 +532,22 @@ export const useSpeechDetector = (
         detectorRef.current.destroy();
       }
     };
+  }, []); // Remove onTranscriptChange dependency to prevent recreation
+
+  // Update callback when onTranscriptChange changes
+  useEffect(() => {
+    if (detectorRef.current) {
+      detectorRef.current.setOnTranscriptUpdate((result: TranscriptResult) => {
+        setCurrentTranscript(result.finalTranscript);
+        setInterimTranscript(result.interimTranscript);
+        
+        // Only call onChange when final transcript changes
+        if (result.finalTranscript !== lastNotifiedTranscript.current) {
+          lastNotifiedTranscript.current = result.finalTranscript;
+          onTranscriptChange(result.finalTranscript);
+        }
+      });
+    }
   }, [onTranscriptChange]);
 
   const startRecording = useCallback(() => {
