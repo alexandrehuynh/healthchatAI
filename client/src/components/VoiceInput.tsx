@@ -14,9 +14,15 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false }: 
   const [isSupported, setIsSupported] = useState(false);
   const [accumulatedTranscript, setAccumulatedTranscript] = useState('');
   const [interimText, setInterimText] = useState('');
+  const [silenceCountdown, setSilenceCountdown] = useState(0);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const shouldContinueRef = useRef(false);
   const restartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Silence detection timeout (in milliseconds)
+  const SILENCE_TIMEOUT = 3000; // 3 seconds of silence before stopping
 
   useEffect(() => {
     // Check if Web Speech API is supported
@@ -50,6 +56,11 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false }: 
           } else {
             interimTranscript += transcriptSegment;
           }
+        }
+
+        // Reset silence timeout when speech is detected
+        if (finalTranscript || interimTranscript) {
+          resetSilenceTimer();
         }
 
         // Update accumulated transcript with new final results
@@ -118,8 +129,47 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false }: 
       if (restartTimeoutRef.current) {
         clearTimeout(restartTimeoutRef.current);
       }
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+      }
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
     };
   }, [onTranscriptChange, accumulatedTranscript]);
+
+  // Reset silence timer when speech is detected
+  const resetSilenceTimer = () => {
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+    }
+    
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+    }
+    
+    // Reset countdown display
+    setSilenceCountdown(SILENCE_TIMEOUT / 1000);
+    
+    // Start countdown interval
+    countdownIntervalRef.current = setInterval(() => {
+      setSilenceCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(countdownIntervalRef.current!);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    // Start new silence timer
+    silenceTimeoutRef.current = setTimeout(() => {
+      if (shouldContinueRef.current) {
+        // Auto-stop after silence timeout
+        stopListening();
+      }
+    }, SILENCE_TIMEOUT);
+  };
 
   const startListening = () => {
     if (recognitionRef.current && !isListening) {
@@ -129,6 +179,9 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false }: 
       
       // Enable continuous recording
       shouldContinueRef.current = true;
+      
+      // Start silence timer
+      resetSilenceTimer();
       
       try {
         recognitionRef.current.start();
@@ -143,10 +196,20 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false }: 
     // Disable continuous recording
     shouldContinueRef.current = false;
     
-    // Clear any pending restart timeout
+    // Clear any pending timeouts
     if (restartTimeoutRef.current) {
       clearTimeout(restartTimeoutRef.current);
       restartTimeoutRef.current = null;
+    }
+    
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = null;
+    }
+    
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
     }
     
     // Stop recognition
@@ -155,6 +218,7 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false }: 
     }
     
     setIsListening(false);
+    setSilenceCountdown(0);
   };
 
   const toggleListening = () => {
@@ -204,6 +268,11 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false }: 
         <div className="flex items-center space-x-1 text-xs text-gray-600">
           <Volume2 className="h-3 w-3 animate-pulse" />
           <span>Recording...</span>
+          {silenceCountdown > 0 && (
+            <span className="text-gray-500 ml-2">
+              (auto-stops in {silenceCountdown}s)
+            </span>
+          )}
         </div>
       )}
       
