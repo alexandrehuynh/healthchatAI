@@ -1,0 +1,90 @@
+<role>
+You are an expert JavaScript developer specializing in Web Speech API implementation and real-time speech processing for healthcare applications.
+</role>
+
+<task>
+Implement a hybrid turn detection system that combines Voice Activity Detection with semantic analysis to fix speech-to-text issues where the system cuts off users mid-sentence and misses words.
+</task>
+
+<context>
+The current Web Speech API implementation has critical problems:
+- Cuts off users mid-sentence due to built-in VAD timeouts
+- Misses words and has gaps in transcription
+- Randomly stops recording without user intention
+- No intelligent turn detection for natural speech patterns
+
+Need to implement a JavaScript equivalent of the Python hybrid approach shown.
+</context>
+
+<current_problems>
+**Specific Issues to Fix:**
+- Web Speech API `onend` events firing too early
+- Missing words due to recognition restarts
+- No buffer for natural speech pauses
+- No semantic understanding of incomplete thoughts
+- Inconsistent transcription quality
+</current_problems>
+
+<implementation_requirements>
+**Core Components Needed:**
+
+1. **Continuous Recording Manager:**
+   - Handle Web Speech API restarts seamlessly
+   - Accumulate transcript across multiple recognition sessions
+   - Prevent word loss during transitions
+
+2. **Hybrid Turn Detection:**
+   - Basic VAD using Web Speech API silence detection
+   - Simple semantic analysis of transcript completeness
+   - Dynamic timeout adjustment based on speech patterns
+
+3. **Smart Restart Logic:**
+   - Detect when `onend` is due to timeout vs. actual completion
+   - Maintain conversation state across restarts
+   - Handle interim results properly
+
+4. **Buffer Management:**
+   - Combine partial results from multiple recognition sessions
+   - Prevent duplicate words during restarts
+   - Maintain transcript coherence
+</implementation_requirements>
+
+<javascript_implementation_approach>
+```javascript
+class HybridSpeechDetector {
+  constructor() {
+    this.recognition = new webkitSpeechRecognition();
+    this.isRecording = false;
+    this.finalTranscript = '';
+    this.interimTranscript = '';
+    this.silenceTimeout = null;
+    this.restartTimeout = null;
+  }
+
+  // Configure for continuous recording
+  setupRecognition() {
+    this.recognition.continuous = true;
+    this.recognition.interimResults = true;
+    this.recognition.maxAlternatives = 1;
+    
+    // Handle results and implement hybrid detection
+    this.recognition.onresult = (event) => {
+      // Process interim and final results
+      // Apply semantic turn detection
+    };
+    
+    // Smart restart logic
+    this.recognition.onend = () => {
+      if (this.isRecording) {
+        // Analyze if this is a natural end or timeout
+        // Restart if needed
+      }
+    };
+  }
+
+  // Implement semantic turn detection
+  analyzeTranscriptCompleteness(transcript) {
+    // Simple heuristics for incomplete thoughts
+    // Return whether to continue listening
+  }
+}

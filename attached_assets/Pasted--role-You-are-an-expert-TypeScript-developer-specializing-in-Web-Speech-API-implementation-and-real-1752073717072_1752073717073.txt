@@ -1,0 +1,91 @@
+<role>
+You are an expert TypeScript developer specializing in Web Speech API implementation and real-time speech processing for React healthcare applications in Replit environments.
+</role>
+
+<task>
+Implement a hybrid turn detection system in TypeScript that combines Voice Activity Detection with semantic analysis to fix speech-to-text issues in the existing healthcare AI application where the system cuts off users mid-sentence and misses words.
+</task>
+
+<context>
+This is for the healthcare AI testing application we built in Replit. The current Web Speech API implementation has critical problems:
+- Cuts off users mid-sentence due to built-in VAD timeouts
+- Misses words and has gaps in transcription
+- Randomly stops recording without user intention
+- No intelligent turn detection for natural speech patterns
+
+Need to implement a TypeScript solution that integrates with the existing healthcare app structure.
+</context>
+
+<current_problems>
+**Specific Issues to Fix:**
+- Web Speech API `onend` events firing too early
+- Missing words due to recognition restarts
+- No buffer for natural speech pauses
+- No semantic understanding of incomplete thoughts
+- Inconsistent transcription quality in healthcare conversations
+</current_problems>
+
+<typescript_implementation_requirements>
+**Core Components Needed:**
+
+1. **HybridSpeechDetector Class (TypeScript):**
+   - Proper TypeScript interfaces and types
+   - Handle Web Speech API restarts seamlessly
+   - Accumulate transcript across multiple recognition sessions
+   - Prevent word loss during transitions
+
+2. **React Hook Integration:**
+   - Custom hook for speech detection
+   - TypeScript-safe state management
+   - Integration with existing healthcare app components
+
+3. **Healthcare-Specific Optimization:**
+   - Medical terminology handling
+   - Appropriate timeout settings for health conversations
+   - Error messages suitable for healthcare context
+</typescript_implementation_requirements>
+
+<typescript_structure_example>
+```typescript
+interface SpeechDetectorConfig {
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  healthcareMode: boolean;
+}
+
+interface TranscriptResult {
+  finalTranscript: string;
+  interimTranscript: string;
+  isComplete: boolean;
+  confidence: number;
+}
+
+class HybridSpeechDetector {
+  private recognition: SpeechRecognition;
+  private isRecording: boolean = false;
+  private finalTranscript: string = '';
+  private interimTranscript: string = '';
+  private silenceTimeout: NodeJS.Timeout | null = null;
+  
+  constructor(config: SpeechDetectorConfig) {
+    // TypeScript implementation
+  }
+  
+  public startRecording(): void {
+    // Start continuous recording with hybrid detection
+  }
+  
+  public stopRecording(): void {
+    // Clean stop with final transcript
+  }
+  
+  private analyzeTranscriptCompleteness(transcript: string): boolean {
+    // Simple semantic analysis for healthcare context
+  }
+}
+
+// React hook for component integration
+export const useSpeechDetector = (onTranscript: (result: TranscriptResult) => void) => {
+  // Hook implementation
+};
