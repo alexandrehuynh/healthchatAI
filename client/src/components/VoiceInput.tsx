@@ -7,9 +7,10 @@ interface VoiceInputProps {
   onTranscriptChange: (transcript: string) => void;
   className?: string;
   disabled?: boolean;
+  currentTranscript?: string; // Add this to track external changes
 }
 
-export function VoiceInput({ onTranscriptChange, className, disabled = false }: VoiceInputProps) {
+export function VoiceInput({ onTranscriptChange, className, disabled = false, currentTranscript = '' }: VoiceInputProps) {
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
   const [accumulatedTranscript, setAccumulatedTranscript] = useState('');
@@ -23,6 +24,19 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false }: 
   
   // Silence detection timeout (in milliseconds)
   const SILENCE_TIMEOUT = 3000; // 3 seconds of silence before stopping
+
+  // Effect to detect when external transcript is cleared
+  useEffect(() => {
+    if (currentTranscript === '' && accumulatedTranscript !== '') {
+      // External transcript was cleared, reset internal state
+      setAccumulatedTranscript('');
+      setInterimText('');
+    } else if (currentTranscript !== '' && !isListening) {
+      // External transcript was updated while not listening, sync internal state
+      setAccumulatedTranscript(currentTranscript);
+      setInterimText('');
+    }
+  }, [currentTranscript, accumulatedTranscript, isListening]);
 
   useEffect(() => {
     // Check if Web Speech API is supported
@@ -65,14 +79,24 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false }: 
 
         // Update accumulated transcript with new final results
         if (finalTranscript) {
-          const newAccumulated = accumulatedTranscript + finalTranscript;
+          // Clean up the final transcript and add proper spacing
+          const cleanFinalTranscript = finalTranscript.trim();
+          const needsSpace = accumulatedTranscript.length > 0 && !accumulatedTranscript.endsWith(' ') && cleanFinalTranscript.length > 0;
+          const newAccumulated = accumulatedTranscript + (needsSpace ? ' ' : '') + cleanFinalTranscript;
           setAccumulatedTranscript(newAccumulated);
-          setInterimText(interimTranscript);
-          onTranscriptChange(newAccumulated + interimTranscript);
+          setInterimText(interimTranscript.trim());
+          
+          // Combine with proper spacing
+          const combinedTranscript = newAccumulated + (interimTranscript.trim() ? ' ' + interimTranscript.trim() : '');
+          onTranscriptChange(combinedTranscript);
         } else {
           // Only interim results
-          setInterimText(interimTranscript);
-          onTranscriptChange(accumulatedTranscript + interimTranscript);
+          const cleanInterimTranscript = interimTranscript.trim();
+          setInterimText(cleanInterimTranscript);
+          
+          const needsSpace = accumulatedTranscript.length > 0 && !accumulatedTranscript.endsWith(' ') && cleanInterimTranscript.length > 0;
+          const combinedTranscript = accumulatedTranscript + (needsSpace ? ' ' : '') + cleanInterimTranscript;
+          onTranscriptChange(combinedTranscript);
         }
       };
 

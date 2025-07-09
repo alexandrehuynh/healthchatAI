@@ -282,6 +282,7 @@ export default function Dashboard() {
                             setTestResult(null);
                           }
                         }}
+                        currentTranscript={userInput}
                         disabled={testPromptMutation.isPending}
                       />
                       <Button
