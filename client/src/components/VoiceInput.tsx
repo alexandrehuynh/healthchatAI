@@ -19,6 +19,7 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false, cu
   const shouldContinueRef = useRef(false);
   const restartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const accumulatedTranscriptRef = useRef<string>(''); // Use ref to persist across recognition restarts
   
   // Silence detection timeout (in milliseconds)
   const SILENCE_TIMEOUT = 3000; // 3 seconds of silence before stopping
@@ -27,6 +28,7 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false, cu
   useEffect(() => {
     if (currentTranscript && accumulatedTranscript === '') {
       setAccumulatedTranscript(currentTranscript);
+      accumulatedTranscriptRef.current = currentTranscript;
     }
   }, []);
 
@@ -36,6 +38,7 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false, cu
       // External transcript was cleared, reset internal state
       setAccumulatedTranscript('');
       setInterimText('');
+      accumulatedTranscriptRef.current = '';
     }
   }, [currentTranscript, accumulatedTranscript]);
 
@@ -82,18 +85,21 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false, cu
         if (finalTranscript) {
           // Clean up the final transcript and add proper spacing
           const cleanFinalTranscript = finalTranscript.trim();
-          const needsSpace = accumulatedTranscript.length > 0 && 
-                           !accumulatedTranscript.endsWith(' ') && 
+          const currentAccumulated = accumulatedTranscriptRef.current;
+          const needsSpace = currentAccumulated.length > 0 && 
+                           !currentAccumulated.endsWith(' ') && 
                            cleanFinalTranscript.length > 0;
-          const newAccumulated = accumulatedTranscript + (needsSpace ? ' ' : '') + cleanFinalTranscript;
+          const newAccumulated = currentAccumulated + (needsSpace ? ' ' : '') + cleanFinalTranscript;
           
           console.log('Voice Input Debug:', {
-            previousAccumulated: accumulatedTranscript,
+            previousAccumulated: currentAccumulated,
             newFinal: cleanFinalTranscript,
             newAccumulated: newAccumulated,
             interim: interimTranscript.trim()
           });
           
+          // Update both state and ref
+          accumulatedTranscriptRef.current = newAccumulated;
           setAccumulatedTranscript(newAccumulated);
           setInterimText(interimTranscript.trim());
           
@@ -105,10 +111,11 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false, cu
           const cleanInterimTranscript = interimTranscript.trim();
           setInterimText(cleanInterimTranscript);
           
-          const needsSpace = accumulatedTranscript.length > 0 && 
-                           !accumulatedTranscript.endsWith(' ') && 
+          const currentAccumulated = accumulatedTranscriptRef.current;
+          const needsSpace = currentAccumulated.length > 0 && 
+                           !currentAccumulated.endsWith(' ') && 
                            cleanInterimTranscript.length > 0;
-          const combinedTranscript = accumulatedTranscript + (needsSpace ? ' ' : '') + cleanInterimTranscript;
+          const combinedTranscript = currentAccumulated + (needsSpace ? ' ' : '') + cleanInterimTranscript;
           onTranscriptChange(combinedTranscript);
         }
       };
@@ -139,11 +146,13 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false, cu
       };
 
       recognition.onend = () => {
+        console.log('Recognition ended, accumulated transcript:', accumulatedTranscriptRef.current);
         // Auto-restart if we should continue listening
         if (shouldContinueRef.current) {
           restartTimeoutRef.current = setTimeout(() => {
             if (shouldContinueRef.current && recognitionRef.current) {
               try {
+                console.log('About to restart recognition, accumulated:', accumulatedTranscriptRef.current);
                 recognitionRef.current.start();
                 resetSilenceTimer();
               } catch (e) {
