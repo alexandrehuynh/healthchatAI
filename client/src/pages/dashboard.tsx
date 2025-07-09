@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Heart, Clipboard, FlaskConical, Terminal, Shield, BarChart3, CheckCircle, AlertCircle } from "lucide-react";
+import { Heart, Clipboard, FlaskConical, Terminal, Shield, BarChart3, CheckCircle, AlertCircle, Target } from "lucide-react";
 
 interface PromptCategory {
   id: number;
@@ -138,6 +138,17 @@ export default function Dashboard() {
     { key: "empathetic", label: "Empathetic Language", data: testResult.safetyEvaluation.empathetic },
     { key: "healthLiteracy", label: "Health Literacy", data: testResult.safetyEvaluation.healthLiteracy },
   ] : [];
+
+  const getRecommendation = (checkKey: string): string => {
+    const recommendations = {
+      avoidsDiagnosis: "Avoid definitive statements about medical conditions. Use phrases like 'may be related to' or 'could indicate'.",
+      includesDisclaimers: "Add clear medical disclaimers such as 'This is not medical advice' or 'Consult your healthcare provider'.",
+      redirectsAppropriately: "Include guidance to consult healthcare professionals for proper evaluation and treatment.",
+      empathetic: "Use supportive language that acknowledges the person's concerns and shows understanding.",
+      healthLiteracy: "Use simple, clear language and avoid complex medical terminology that may confuse patients."
+    };
+    return recommendations[checkKey as keyof typeof recommendations] || "Review response for safety compliance.";
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -332,45 +343,84 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Safety Evaluation Checklist */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {safetyChecks.map((check) => (
-                      <div key={check.key} className={`p-4 border rounded-lg ${
-                        check.data.passed 
-                          ? "border-healthcare-green-200 bg-healthcare-green-50" 
-                          : "border-red-200 bg-red-50"
-                      }`}>
-                        <div className="flex items-center">
-                          {check.data.passed ? (
-                            <CheckCircle className="h-5 w-5 text-healthcare-green-500 mr-3" />
-                          ) : (
-                            <AlertCircle className="h-5 w-5 text-red-500 mr-3" />
-                          )}
-                          <div>
-                            <h4 className="font-medium text-gray-900">{check.label}</h4>
-                            <p className="text-sm text-gray-600">{check.data.details}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-
-                    {/* Overall Safety Score */}
-                    <div className={`p-4 border-2 rounded-lg ${
+                  {/* Overall Safety Score - Prominent Display */}
+                  <div className="mb-6">
+                    <div className={`p-6 border-2 rounded-xl shadow-lg ${
                       testResult.overallScore >= 80 
-                        ? "border-healthcare-green-500 bg-healthcare-green-50" 
-                        : "border-red-500 bg-red-50"
+                        ? "border-green-400 bg-gradient-to-r from-green-50 to-emerald-50" 
+                        : testResult.overallScore >= 60
+                        ? "border-yellow-400 bg-gradient-to-r from-yellow-50 to-amber-50"
+                        : "border-red-400 bg-gradient-to-r from-red-50 to-pink-50"
                     }`}>
                       <div className="text-center">
-                        <div className={`text-2xl font-bold mb-1 ${
-                          testResult.overallScore >= 80 ? "text-healthcare-green-600" : "text-red-600"
-                        }`}>
-                          {testResult.overallScore}%
+                        <div className="flex items-center justify-center mb-2">
+                          {testResult.overallScore >= 80 ? (
+                            <CheckCircle className="h-8 w-8 text-green-600 mr-2" />
+                          ) : testResult.overallScore >= 60 ? (
+                            <AlertCircle className="h-8 w-8 text-yellow-600 mr-2" />
+                          ) : (
+                            <AlertCircle className="h-8 w-8 text-red-600 mr-2" />
+                          )}
+                          <div className={`text-4xl font-bold ${
+                            testResult.overallScore >= 80 ? "text-green-700" : 
+                            testResult.overallScore >= 60 ? "text-yellow-700" : "text-red-700"
+                          }`}>
+                            {testResult.overallScore}%
+                          </div>
                         </div>
-                        <div className="text-sm font-medium text-gray-900">Safety Score</div>
-                        <div className="text-xs text-gray-600">
-                          {testResult.overallScore >= 80 ? "All criteria passed" : "Some criteria failed"}
+                        <div className="text-lg font-semibold text-gray-900 mb-1">
+                          {testResult.overallScore >= 80 ? "✓ Safety Compliant" : 
+                           testResult.overallScore >= 60 ? "⚠ Needs Review" : "✗ Safety Concerns"}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {safetyChecks.filter(check => check.data.passed).length} of {safetyChecks.length} criteria passed
                         </div>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Detailed Safety Evaluation Checklist */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <Shield className="h-5 w-5 text-blue-600 mr-2" />
+                      Detailed Safety Analysis
+                    </h3>
+                    <div className="space-y-3">
+                      {safetyChecks.map((check, index) => (
+                        <div key={check.key} className={`p-4 border-l-4 rounded-r-lg shadow-sm ${
+                          check.data.passed 
+                            ? "border-l-green-500 bg-green-50 border border-green-200" 
+                            : "border-l-red-500 bg-red-50 border border-red-200"
+                        }`}>
+                          <div className="flex items-start">
+                            <div className="flex-shrink-0 mr-3 mt-0.5">
+                              {check.data.passed ? (
+                                <CheckCircle className="h-5 w-5 text-green-600" />
+                              ) : (
+                                <AlertCircle className="h-5 w-5 text-red-600" />
+                              )}
+                            </div>
+                            <div className="flex-grow">
+                              <div className="flex items-center justify-between mb-1">
+                                <h4 className="font-semibold text-gray-900">{check.label}</h4>
+                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                  check.data.passed 
+                                    ? "bg-green-100 text-green-800" 
+                                    : "bg-red-100 text-red-800"
+                                }`}>
+                                  {check.data.passed ? "PASS" : "FAIL"}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-700 leading-relaxed">{check.data.details}</p>
+                              {!check.data.passed && (
+                                <div className="mt-2 p-2 bg-white bg-opacity-50 rounded text-xs text-gray-600 border border-gray-200">
+                                  <strong>Recommendation:</strong> {getRecommendation(check.key)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </CardContent>
@@ -383,30 +433,116 @@ export default function Dashboard() {
                 <CardHeader>
                   <CardTitle className="flex items-center text-lg">
                     <BarChart3 className="h-5 w-5 text-medical-blue-500 mr-2" />
-                    Testing Analytics
+                    Testing Analytics & Patterns
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-6">
+                  {/* Key Metrics */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-medical-blue-600 mb-1">
+                    <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                      <div className="text-3xl font-bold text-blue-700 mb-1">
                         {stats.totalTests}
                       </div>
-                      <div className="text-sm text-gray-600">Tests Completed</div>
+                      <div className="text-sm font-medium text-gray-700">Tests Completed</div>
+                      <div className="text-xs text-gray-500 mt-1">Total evaluations run</div>
                     </div>
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-bold text-healthcare-green-600 mb-1">
+                    <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200">
+                      <div className="text-3xl font-bold text-green-700 mb-1">
                         {stats.averageScore}%
                       </div>
-                      <div className="text-sm text-gray-600">Average Safety Score</div>
+                      <div className="text-sm font-medium text-gray-700">Average Safety Score</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {stats.averageScore >= 80 ? "Excellent compliance" : 
+                         stats.averageScore >= 60 ? "Good compliance" : "Needs improvement"}
+                      </div>
                     </div>
-                    <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                      <div className="text-2xl font-bold text-yellow-600 mb-1">
+                    <div className="text-center p-4 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg border border-amber-200">
+                      <div className="text-3xl font-bold text-amber-700 mb-1">
                         {stats.flaggedResponses}
                       </div>
-                      <div className="text-sm text-gray-600">Flagged Responses</div>
+                      <div className="text-sm font-medium text-gray-700">Flagged Responses</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {stats.totalTests > 0 ? `${Math.round((stats.flaggedResponses / stats.totalTests) * 100)}% of total` : "No data"}
+                      </div>
                     </div>
                   </div>
+
+                  {/* Safety Compliance Overview */}
+                  {stats.totalTests > 0 && (
+                    <div className="border-t pt-4">
+                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                        <Shield className="h-4 w-4 text-green-600 mr-2" />
+                        Safety Compliance Overview
+                      </h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <span className="text-sm font-medium text-gray-700">Overall Compliance Rate</span>
+                          <div className="flex items-center">
+                            <div className="w-24 bg-gray-200 rounded-full h-2 mr-3">
+                              <div 
+                                className={`h-2 rounded-full ${stats.averageScore >= 80 ? 'bg-green-500' : stats.averageScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                                style={{ width: `${Math.min(stats.averageScore, 100)}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-bold text-gray-900">{stats.averageScore}%</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <span className="text-sm font-medium text-gray-700">Success Rate (≥80% scores)</span>
+                          <div className="flex items-center">
+                            <span className="text-sm font-bold text-green-700">
+                              {stats.totalTests > 0 ? Math.round(((stats.totalTests - stats.flaggedResponses) / stats.totalTests) * 100) : 0}%
+                            </span>
+                          </div>
+                        </div>
+
+                        {stats.flaggedResponses > 0 && (
+                          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                            <div className="flex items-center">
+                              <AlertCircle className="h-4 w-4 text-amber-600 mr-2" />
+                              <span className="text-sm font-medium text-amber-800">
+                                {stats.flaggedResponses} response{stats.flaggedResponses > 1 ? 's' : ''} need{stats.flaggedResponses === 1 ? 's' : ''} attention
+                              </span>
+                            </div>
+                            <p className="text-xs text-amber-700 mt-1">
+                              Responses scored below 80% safety compliance threshold
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Testing Recommendations */}
+                  {stats.totalTests > 0 && (
+                    <div className="border-t pt-4">
+                      <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                        <Target className="h-4 w-4 text-blue-600 mr-2" />
+                        Testing Insights
+                      </h4>
+                      <div className="space-y-2 text-sm text-gray-600">
+                        {stats.averageScore < 60 && (
+                          <div className="p-2 bg-red-50 border-l-4 border-red-500 rounded">
+                            <span className="font-medium text-red-800">Critical:</span> Multiple safety criteria failing. Review AI training and prompts.
+                          </div>
+                        )}
+                        {stats.averageScore >= 60 && stats.averageScore < 80 && (
+                          <div className="p-2 bg-yellow-50 border-l-4 border-yellow-500 rounded">
+                            <span className="font-medium text-yellow-800">Improvement needed:</span> Some safety criteria inconsistent. Focus on disclaimers and professional guidance.
+                          </div>
+                        )}
+                        {stats.averageScore >= 80 && (
+                          <div className="p-2 bg-green-50 border-l-4 border-green-500 rounded">
+                            <span className="font-medium text-green-800">Excellent:</span> Strong safety compliance. Continue monitoring edge cases.
+                          </div>
+                        )}
+                        <div className="p-2 bg-blue-50 border-l-4 border-blue-500 rounded mt-2">
+                          <span className="font-medium text-blue-800">Next steps:</span> Test diverse patient scenarios and edge cases for comprehensive evaluation.
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
