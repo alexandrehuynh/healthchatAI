@@ -151,6 +151,14 @@ class HybridSpeechDetector {
     this.recognition.lang = this.config.lang;
 
     this.setupEventHandlers();
+    
+    // Notify that speech recognition is supported and initialized
+    this.notifyStateChange({
+      isRecording: false,
+      isSupported: true,
+      error: null,
+      lastActivity: 0
+    });
   }
 
   private setupEventHandlers(): void {
