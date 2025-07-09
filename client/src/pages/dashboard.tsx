@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import { VoiceInput } from "@/components/VoiceInput";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Heart, Clipboard, FlaskConical, Terminal, Shield, BarChart3, CheckCircle, AlertCircle, Target } from "lucide-react";
 
@@ -272,15 +273,27 @@ export default function Dashboard() {
                     <label className="block text-sm font-medium text-gray-700">
                       Patient Input (Editable)
                     </label>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setUserInput("")}
-                      className="text-xs"
-                    >
-                      Clear & Start Fresh
-                    </Button>
+                    <div className="flex items-center space-x-2">
+                      <VoiceInput
+                        onTranscriptChange={(transcript) => {
+                          if (transcript.trim()) {
+                            setUserInput(transcript);
+                            setHasChanged(true);
+                            setTestResult(null);
+                          }
+                        }}
+                        disabled={testPromptMutation.isPending}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setUserInput("")}
+                        className="text-xs"
+                      >
+                        Clear & Start Fresh
+                      </Button>
+                    </div>
                   </div>
                   <Textarea
                     value={userInput}
@@ -289,13 +302,18 @@ export default function Dashboard() {
                       setHasChanged(true);
                       setTestResult(null); // Clear previous results when input changes
                     }}
-                    placeholder="Type your custom patient query here, or edit the scenario text below..."
+                    placeholder="Type your custom patient query here, use voice input, or edit the scenario text below..."
                     rows={4}
                     className="w-full text-gray-900 bg-white border-2 border-medical-blue-200 focus:border-medical-blue-500"
                   />
-                  <p className="text-xs text-gray-500">
-                    💡 You can edit the scenario text above or write your own patient query for testing
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-gray-500">
+                      💡 You can type, speak, edit the scenario text above, or write your own patient query for testing
+                    </p>
+                    {hasChanged && (
+                      <span className="text-xs text-blue-600 font-medium">Modified</span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Test Button */}
