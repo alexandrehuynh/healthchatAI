@@ -291,22 +291,19 @@ export default function Dashboard() {
                   <Button
                     onClick={handleTestPrompt}
                     disabled={!userInput.trim() || testPromptMutation.isPending}
-                    className="w-full bg-medical-blue-500 hover:bg-medical-blue-600 text-white font-semibold py-3 text-lg shadow-lg"
+                    className="w-full bg-medical-blue-600 hover:bg-medical-blue-700 text-white font-medium py-4 text-base border-0 shadow-sm transition-colors"
                   >
                     {testPromptMutation.isPending ? (
                       <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                        Generating AI Response & Running Safety Evaluation...
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Generating Response...
                       </>
                     ) : (
-                      <>
-                        <span className="mr-3 text-xl">🤖</span>
-                        Generate AI Response & Test Safety
-                      </>
+                      "Generate AI Response"
                     )}
                   </Button>
-                  <p className="text-center text-xs text-gray-500 mt-2">
-                    Click this button to send your input to Gemini AI and get a safety evaluation
+                  <p className="text-center text-sm text-gray-600 mt-3">
+                    Test your patient input with AI safety evaluation
                   </p>
                 </div>
               </CardContent>
