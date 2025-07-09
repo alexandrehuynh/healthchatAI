@@ -29,12 +29,9 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false, cu
       // External transcript was cleared, reset internal state
       setAccumulatedTranscript('');
       setInterimText('');
-    } else if (currentTranscript !== '' && !isListening) {
-      // External transcript was updated while not listening, sync internal state
-      setAccumulatedTranscript(currentTranscript);
-      setInterimText('');
     }
-  }, [currentTranscript, accumulatedTranscript, isListening]);
+    // Remove the sync logic that was overwriting accumulated transcript
+  }, [currentTranscript, accumulatedTranscript]);
 
   useEffect(() => {
     // Check if Web Speech API is supported
@@ -113,6 +110,7 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false, cu
               if (shouldContinueRef.current && recognitionRef.current) {
                 try {
                   recognitionRef.current.start();
+                  resetSilenceTimer();
                 } catch (e) {
                   console.error('Error restarting recognition:', e);
                 }
@@ -133,6 +131,7 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false, cu
             if (shouldContinueRef.current && recognitionRef.current) {
               try {
                 recognitionRef.current.start();
+                resetSilenceTimer();
               } catch (e) {
                 console.error('Error restarting recognition:', e);
                 setIsListening(false);
@@ -167,23 +166,19 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false, cu
       clearTimeout(silenceTimeoutRef.current);
     }
     
+    // Don't automatically stop on silence - let the user control when to stop
+    // This prevents unwanted stops during natural speech pauses
     silenceTimeoutRef.current = setTimeout(() => {
-      if (shouldContinueRef.current && isListening) {
-        // Check if we have meaningful content before stopping
-        const hasContent = accumulatedTranscript.trim().length > 0;
-        
-        if (hasContent) {
-          handleStopListening();
-        }
-      }
+      // We could add logic here for very long silence periods if needed
+      // For now, let the user control stopping manually
     }, SILENCE_TIMEOUT);
   };
 
   const handleStartListening = () => {
     if (!isSupported || !recognitionRef.current) return;
 
-    // Reset state
-    setAccumulatedTranscript('');
+    // Don't reset accumulated transcript - keep building on it
+    // Only reset interim text
     setInterimText('');
     shouldContinueRef.current = true;
 
