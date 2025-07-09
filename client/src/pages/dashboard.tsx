@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Heart, Clipboard, FlaskConical, Terminal, Shield, BarChart3, CheckCircle, AlertCircle, Target } from "lucide-react";
 
@@ -337,9 +338,10 @@ export default function Dashboard() {
                       AI Response
                     </label>
                     <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                      <p className="text-gray-800 leading-relaxed whitespace-pre-line">
-                        {testResult.aiResponse}
-                      </p>
+                      <MarkdownRenderer 
+                        content={testResult.aiResponse}
+                        className="text-gray-800 leading-relaxed prose-headings:text-gray-900 prose-strong:text-gray-900 prose-strong:font-semibold prose-em:text-gray-800 prose-li:text-gray-700"
+                      />
                     </div>
                   </div>
 
