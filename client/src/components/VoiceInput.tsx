@@ -1,7 +1,7 @@
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Volume2, AlertCircle } from 'lucide-react';
+import { Mic, MicOff, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useSpeechDetector } from '@/hooks/useSpeechDetector';
 
 interface VoiceInputProps {
   onTranscriptChange: (transcript: string) => void;
@@ -11,25 +11,215 @@ interface VoiceInputProps {
 }
 
 export function VoiceInput({ onTranscriptChange, className, disabled = false, currentTranscript = '' }: VoiceInputProps) {
-  const {
-    isRecording,
-    isSupported,
-    error,
-    currentTranscript: detectedTranscript,
-    interimTranscript,
-    toggleRecording
-  } = useSpeechDetector(
-    (transcript: string) => {
-      if (transcript.trim()) {
-        onTranscriptChange(transcript);
-      }
-    },
-    {
-      healthcareMode: true,
-      silenceThreshold: 3000, // 3 seconds
-      turnDetectionTimeout: 4000, // 4 seconds for healthcare context
+  const [isListening, setIsListening] = useState(false);
+  const [isSupported, setIsSupported] = useState(false);
+  const [accumulatedTranscript, setAccumulatedTranscript] = useState('');
+  const [interimText, setInterimText] = useState('');
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const shouldContinueRef = useRef(false);
+  const restartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Silence detection timeout (in milliseconds)
+  const SILENCE_TIMEOUT = 3000; // 3 seconds of silence before stopping
+
+  // Effect to detect when external transcript is cleared
+  useEffect(() => {
+    if (currentTranscript === '' && accumulatedTranscript !== '') {
+      // External transcript was cleared, reset internal state
+      setAccumulatedTranscript('');
+      setInterimText('');
+    } else if (currentTranscript !== '' && !isListening) {
+      // External transcript was updated while not listening, sync internal state
+      setAccumulatedTranscript(currentTranscript);
+      setInterimText('');
     }
-  );
+  }, [currentTranscript, accumulatedTranscript, isListening]);
+
+  useEffect(() => {
+    // Check if Web Speech API is supported
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    setIsSupported(!!SpeechRecognition);
+
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        // Clear any pending restart timeout
+        if (restartTimeoutRef.current) {
+          clearTimeout(restartTimeoutRef.current);
+          restartTimeoutRef.current = null;
+        }
+      };
+
+      recognition.onresult = (event) => {
+        let finalTranscript = '';
+        let interimTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcriptSegment = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcriptSegment;
+          } else {
+            interimTranscript += transcriptSegment;
+          }
+        }
+
+        // Reset silence timeout when speech is detected
+        if (finalTranscript || interimTranscript) {
+          resetSilenceTimer();
+        }
+
+        // Update accumulated transcript with new final results
+        if (finalTranscript) {
+          // Clean up the final transcript and add proper spacing
+          const cleanFinalTranscript = finalTranscript.trim();
+          const needsSpace = accumulatedTranscript.length > 0 && 
+                           !accumulatedTranscript.endsWith(' ') && 
+                           cleanFinalTranscript.length > 0;
+          const newAccumulated = accumulatedTranscript + (needsSpace ? ' ' : '') + cleanFinalTranscript;
+          setAccumulatedTranscript(newAccumulated);
+          setInterimText(interimTranscript.trim());
+          
+          // Combine with proper spacing
+          const combinedTranscript = newAccumulated + (interimTranscript.trim() ? ' ' + interimTranscript.trim() : '');
+          onTranscriptChange(combinedTranscript);
+        } else {
+          // Only interim results
+          const cleanInterimTranscript = interimTranscript.trim();
+          setInterimText(cleanInterimTranscript);
+          
+          const needsSpace = accumulatedTranscript.length > 0 && 
+                           !accumulatedTranscript.endsWith(' ') && 
+                           cleanInterimTranscript.length > 0;
+          const combinedTranscript = accumulatedTranscript + (needsSpace ? ' ' : '') + cleanInterimTranscript;
+          onTranscriptChange(combinedTranscript);
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        
+        // Handle specific errors
+        if (event.error === 'no-speech' || event.error === 'audio-capture') {
+          // These are recoverable errors - restart if we should continue
+          if (shouldContinueRef.current) {
+            restartTimeoutRef.current = setTimeout(() => {
+              if (shouldContinueRef.current && recognitionRef.current) {
+                try {
+                  recognitionRef.current.start();
+                } catch (e) {
+                  console.error('Error restarting recognition:', e);
+                }
+              }
+            }, 100);
+          }
+        } else {
+          // Other errors - stop listening
+          setIsListening(false);
+          shouldContinueRef.current = false;
+        }
+      };
+
+      recognition.onend = () => {
+        // Auto-restart if we should continue listening
+        if (shouldContinueRef.current) {
+          restartTimeoutRef.current = setTimeout(() => {
+            if (shouldContinueRef.current && recognitionRef.current) {
+              try {
+                recognitionRef.current.start();
+              } catch (e) {
+                console.error('Error restarting recognition:', e);
+                setIsListening(false);
+                shouldContinueRef.current = false;
+              }
+            }
+          }, 100);
+        } else {
+          setIsListening(false);
+        }
+      };
+
+      recognitionRef.current = recognition;
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        shouldContinueRef.current = false;
+        recognitionRef.current.stop();
+      }
+      if (restartTimeoutRef.current) {
+        clearTimeout(restartTimeoutRef.current);
+      }
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const resetSilenceTimer = () => {
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+    }
+    
+    silenceTimeoutRef.current = setTimeout(() => {
+      if (shouldContinueRef.current && isListening) {
+        // Check if we have meaningful content before stopping
+        const hasContent = accumulatedTranscript.trim().length > 0;
+        
+        if (hasContent) {
+          handleStopListening();
+        }
+      }
+    }, SILENCE_TIMEOUT);
+  };
+
+  const handleStartListening = () => {
+    if (!isSupported || !recognitionRef.current) return;
+
+    // Reset state
+    setAccumulatedTranscript('');
+    setInterimText('');
+    shouldContinueRef.current = true;
+
+    try {
+      recognitionRef.current.start();
+      resetSilenceTimer();
+    } catch (error) {
+      console.error('Error starting recognition:', error);
+    }
+  };
+
+  const handleStopListening = () => {
+    shouldContinueRef.current = false;
+    
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = null;
+    }
+    
+    if (restartTimeoutRef.current) {
+      clearTimeout(restartTimeoutRef.current);
+      restartTimeoutRef.current = null;
+    }
+    
+    if (recognitionRef.current && isListening) {
+      recognitionRef.current.stop();
+    }
+  };
+
+  const handleToggleListening = () => {
+    if (isListening) {
+      handleStopListening();
+    } else {
+      handleStartListening();
+    }
+  };
 
   if (!isSupported) {
     return (
@@ -47,59 +237,35 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false, cu
     );
   }
 
-  if (error) {
-    return (
-      <div className={cn("flex items-center space-x-2", className)}>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled
-          className="opacity-50"
-        >
-          <AlertCircle className="h-4 w-4" />
-        </Button>
-        <span className="text-xs text-red-500">{error}</span>
-      </div>
-    );
-  }
-
-  const fullTranscript = detectedTranscript + (interimTranscript ? ' ' + interimTranscript : '');
-
   return (
     <div className={cn("flex items-center space-x-2", className)}>
       <Button
-        variant={isRecording ? "destructive" : "outline"}
+        variant={isListening ? "destructive" : "outline"}
         size="sm"
-        onClick={toggleRecording}
+        onClick={handleToggleListening}
         disabled={disabled}
         className={cn(
           "transition-all duration-200",
-          isRecording && "animate-pulse shadow-lg"
+          isListening && "animate-pulse shadow-lg"
         )}
       >
-        {isRecording ? (
+        {isListening ? (
           <MicOff className="h-4 w-4" />
         ) : (
           <Mic className="h-4 w-4" />
         )}
       </Button>
       
-      {isRecording && (
+      {isListening && (
         <div className="flex items-center space-x-1 text-xs text-gray-600">
           <Volume2 className="h-3 w-3 animate-pulse" />
           <span>Listening...</span>
-          {interimTranscript && (
+          {interimText && (
             <span className="text-gray-500 ml-2 italic">
-              "{interimTranscript}"
+              "{interimText}"
             </span>
           )}
         </div>
-      )}
-      
-      {!isSupported && (
-        <span className="text-xs text-gray-500">
-          Voice input not supported in this browser
-        </span>
       )}
     </div>
   );
