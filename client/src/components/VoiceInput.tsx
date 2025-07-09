@@ -12,8 +12,11 @@ interface VoiceInputProps {
 export function VoiceInput({ onTranscriptChange, className, disabled = false }: VoiceInputProps) {
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
-  const [transcript, setTranscript] = useState('');
+  const [accumulatedTranscript, setAccumulatedTranscript] = useState('');
+  const [interimText, setInterimText] = useState('');
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const shouldContinueRef = useRef(false);
+  const restartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Check if Web Speech API is supported
@@ -24,10 +27,16 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false }: 
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
       recognition.lang = 'en-US';
 
       recognition.onstart = () => {
         setIsListening(true);
+        // Clear any pending restart timeout
+        if (restartTimeoutRef.current) {
+          clearTimeout(restartTimeoutRef.current);
+          restartTimeoutRef.current = null;
+        }
       };
 
       recognition.onresult = (event) => {
@@ -43,18 +52,60 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false }: 
           }
         }
 
-        const fullTranscript = finalTranscript || interimTranscript;
-        setTranscript(fullTranscript);
-        onTranscriptChange(fullTranscript);
+        // Update accumulated transcript with new final results
+        if (finalTranscript) {
+          const newAccumulated = accumulatedTranscript + finalTranscript;
+          setAccumulatedTranscript(newAccumulated);
+          setInterimText(interimTranscript);
+          onTranscriptChange(newAccumulated + interimTranscript);
+        } else {
+          // Only interim results
+          setInterimText(interimTranscript);
+          onTranscriptChange(accumulatedTranscript + interimTranscript);
+        }
       };
 
       recognition.onerror = (event) => {
         console.error('Speech recognition error:', event.error);
-        setIsListening(false);
+        
+        // Handle specific errors
+        if (event.error === 'no-speech' || event.error === 'audio-capture') {
+          // These are recoverable errors - restart if we should continue
+          if (shouldContinueRef.current) {
+            restartTimeoutRef.current = setTimeout(() => {
+              if (shouldContinueRef.current && recognitionRef.current) {
+                try {
+                  recognitionRef.current.start();
+                } catch (e) {
+                  console.error('Error restarting recognition:', e);
+                }
+              }
+            }, 100);
+          }
+        } else {
+          // Other errors - stop listening
+          setIsListening(false);
+          shouldContinueRef.current = false;
+        }
       };
 
       recognition.onend = () => {
-        setIsListening(false);
+        // Auto-restart if we should continue listening
+        if (shouldContinueRef.current) {
+          restartTimeoutRef.current = setTimeout(() => {
+            if (shouldContinueRef.current && recognitionRef.current) {
+              try {
+                recognitionRef.current.start();
+              } catch (e) {
+                console.error('Error restarting recognition:', e);
+                setIsListening(false);
+                shouldContinueRef.current = false;
+              }
+            }
+          }, 100);
+        } else {
+          setIsListening(false);
+        }
       };
 
       recognitionRef.current = recognition;
@@ -64,20 +115,46 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false }: 
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
+      if (restartTimeoutRef.current) {
+        clearTimeout(restartTimeoutRef.current);
+      }
     };
-  }, [onTranscriptChange]);
+  }, [onTranscriptChange, accumulatedTranscript]);
 
   const startListening = () => {
     if (recognitionRef.current && !isListening) {
-      setTranscript('');
-      recognitionRef.current.start();
+      // Reset transcript state
+      setAccumulatedTranscript('');
+      setInterimText('');
+      
+      // Enable continuous recording
+      shouldContinueRef.current = true;
+      
+      try {
+        recognitionRef.current.start();
+      } catch (e) {
+        console.error('Error starting recognition:', e);
+        shouldContinueRef.current = false;
+      }
     }
   };
 
   const stopListening = () => {
-    if (recognitionRef.current && isListening) {
+    // Disable continuous recording
+    shouldContinueRef.current = false;
+    
+    // Clear any pending restart timeout
+    if (restartTimeoutRef.current) {
+      clearTimeout(restartTimeoutRef.current);
+      restartTimeoutRef.current = null;
+    }
+    
+    // Stop recognition
+    if (recognitionRef.current) {
       recognitionRef.current.stop();
     }
+    
+    setIsListening(false);
   };
 
   const toggleListening = () => {
@@ -126,11 +203,11 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false }: 
       {isListening && (
         <div className="flex items-center space-x-1 text-xs text-gray-600">
           <Volume2 className="h-3 w-3 animate-pulse" />
-          <span>Listening...</span>
+          <span>Recording...</span>
         </div>
       )}
       
-      {transcript && !isListening && (
+      {(accumulatedTranscript || interimText) && !isListening && (
         <span className="text-xs text-green-600 font-medium">
           Voice input captured
         </span>

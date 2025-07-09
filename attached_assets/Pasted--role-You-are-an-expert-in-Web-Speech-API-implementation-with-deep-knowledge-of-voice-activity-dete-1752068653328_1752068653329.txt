@@ -1,0 +1,69 @@
+<role>
+You are an expert in Web Speech API implementation with deep knowledge of voice activity detection and continuous speech recognition patterns.
+</role>
+
+<task>
+Fix the speech-to-text implementation to support continuous recording until the user manually stops, eliminating automatic cutoffs from built-in VAD.
+</task>
+
+<context>
+The current implementation uses Web Speech API but automatically cuts off recording due to VAD detecting pauses. Users need to speak continuously without automatic interruption, similar to voice memo apps.
+</context>
+
+<current_problem>
+- Web Speech API SpeechRecognition stops recording on short pauses
+- Users get cut off mid-sentence when they pause to think
+- No semantic understanding of when the user is actually done speaking
+- Need continuous recording until user manually stops
+</current_problem>
+
+<specific_fixes_needed>
+**1. Configure SpeechRecognition settings:**
+- Set `continuous = true` for ongoing recognition
+- Set `interimResults = true` to show real-time transcription
+- Implement `onresult` handler to capture partial and final results
+- Use `onend` handler to automatically restart recognition
+
+**2. Implement continuous recording loop:**
+- Automatically restart recognition when it stops due to timeout
+- Accumulate transcribed text across multiple recognition sessions
+- Provide manual "Stop Recording" button for user control
+
+**3. Visual feedback improvements:**
+- Show "Recording..." indicator while active
+- Display interim results in real-time
+- Clear indication of when recording has stopped
+</specific_fixes_needed>
+
+<implementation_approach>
+```javascript
+// Key configuration example
+recognition.continuous = true;
+recognition.interimResults = true;
+recognition.maxAlternatives = 1;
+
+// Auto-restart on end
+recognition.onend = function() {
+  if (isRecording) {
+    recognition.start(); // Restart if still recording
+  }
+};
+</implementation_approach>
+<output_format>
+Updated React component with:
+
+Properly configured SpeechRecognition settings
+Continuous recording that doesn't auto-stop
+Manual start/stop controls
+Real-time transcript display
+Accumulated text across recognition sessions
+</output_format>
+
+<constraints>
+- Focus specifically on fixing the VAD/turn detection issue
+- Don't add new features - just fix the continuous recording problem
+- Include error handling for recognition failures
+- Provide clear user feedback about recording state
+- If continuous mode has issues, implement restart-on-end pattern as fallback
+</constraints>
+```
