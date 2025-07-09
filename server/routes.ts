@@ -174,23 +174,26 @@ function generateAIResponse(categoryId: number, userInput: string): string {
   let suggestions = ["General guidance", "Professional consultation", "Monitoring and documentation", "Follow-up care"];
   
   if (categoryId === 1) { // Wellness
-    if (input.includes("sleep")) suggestions = categoryResponse.suggestions.sleep;
-    else if (input.includes("stress")) suggestions = categoryResponse.suggestions.stress;
-    else if (input.includes("exercise") || input.includes("fitness")) suggestions = categoryResponse.suggestions.exercise;
-    else if (input.includes("eat") || input.includes("nutrition")) suggestions = categoryResponse.suggestions.nutrition;
-    else if (input.includes("mental") || input.includes("mood")) suggestions = categoryResponse.suggestions.mental;
+    const wellnessSuggestions = categoryResponse.suggestions as any;
+    if (input.includes("sleep")) suggestions = wellnessSuggestions.sleep;
+    else if (input.includes("stress")) suggestions = wellnessSuggestions.stress;
+    else if (input.includes("exercise") || input.includes("fitness")) suggestions = wellnessSuggestions.exercise;
+    else if (input.includes("eat") || input.includes("nutrition")) suggestions = wellnessSuggestions.nutrition;
+    else if (input.includes("mental") || input.includes("mood")) suggestions = wellnessSuggestions.mental;
   } else if (categoryId === 2) { // Medication
-    if (input.includes("forget") || input.includes("remember")) suggestions = categoryResponse.suggestions.adherence;
-    else if (input.includes("side effect") || input.includes("nausea")) suggestions = categoryResponse.suggestions.sideEffects;
-    else if (input.includes("time") || input.includes("when")) suggestions = categoryResponse.suggestions.timing;
-    else if (input.includes("interact")) suggestions = categoryResponse.suggestions.interactions;
-    else if (input.includes("refill") || input.includes("running low")) suggestions = categoryResponse.suggestions.refills;
+    const medicationSuggestions = categoryResponse.suggestions as any;
+    if (input.includes("forget") || input.includes("remember")) suggestions = medicationSuggestions.adherence;
+    else if (input.includes("side effect") || input.includes("nausea")) suggestions = medicationSuggestions.sideEffects;
+    else if (input.includes("time") || input.includes("when")) suggestions = medicationSuggestions.timing;
+    else if (input.includes("interact")) suggestions = medicationSuggestions.interactions;
+    else if (input.includes("refill") || input.includes("running low")) suggestions = medicationSuggestions.refills;
   } else if (categoryId === 3) { // Health Screening
-    if (input.includes("symptom") || input.includes("headache") || input.includes("pain")) suggestions = categoryResponse.suggestions.symptoms;
-    else if (input.includes("family") || input.includes("history")) suggestions = categoryResponse.suggestions.riskFactors;
-    else if (input.includes("screening") || input.includes("mammogram")) suggestions = categoryResponse.suggestions.preventive;
-    else if (input.includes("depressed") || input.includes("mental")) suggestions = categoryResponse.suggestions.mentalHealth;
-    else if (input.includes("diabetes") || input.includes("monitor")) suggestions = categoryResponse.suggestions.chronic;
+    const screeningSuggestions = categoryResponse.suggestions as any;
+    if (input.includes("symptom") || input.includes("headache") || input.includes("pain")) suggestions = screeningSuggestions.symptoms;
+    else if (input.includes("family") || input.includes("history")) suggestions = screeningSuggestions.riskFactors;
+    else if (input.includes("screening") || input.includes("mammogram")) suggestions = screeningSuggestions.preventive;
+    else if (input.includes("depressed") || input.includes("mental")) suggestions = screeningSuggestions.mentalHealth;
+    else if (input.includes("diabetes") || input.includes("monitor")) suggestions = screeningSuggestions.chronic;
   }
 
   let response = categoryResponse.template;

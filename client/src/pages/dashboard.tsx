@@ -244,17 +244,31 @@ export default function Dashboard() {
                 )}
 
                 {/* User Input */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Patient Input
-                  </label>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Patient Input (Editable)
+                    </label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setUserInput("")}
+                      className="text-xs"
+                    >
+                      Clear & Start Fresh
+                    </Button>
+                  </div>
                   <Textarea
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
-                    placeholder="Enter patient query for testing..."
-                    rows={3}
-                    className="w-full"
+                    placeholder="Type your custom patient query here, or edit the scenario text below..."
+                    rows={4}
+                    className="w-full text-gray-900 bg-white border-2 border-medical-blue-200 focus:border-medical-blue-500"
                   />
+                  <p className="text-xs text-gray-500">
+                    💡 You can edit the scenario text above or write your own patient query for testing
+                  </p>
                 </div>
 
                 {/* Test Button */}
