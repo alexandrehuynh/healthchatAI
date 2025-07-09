@@ -275,9 +275,9 @@ export default function Dashboard() {
                     </label>
                     <div className="flex items-center space-x-2">
                       <VoiceInput
-                        onTranscriptChange={(transcript) => {
-                          if (transcript.trim()) {
-                            setUserInput(transcript);
+                        onTranscriptChange={(newTranscript) => {
+                          if (newTranscript.trim()) {
+                            setUserInput(newTranscript);
                             setHasChanged(true);
                             setTestResult(null);
                           }

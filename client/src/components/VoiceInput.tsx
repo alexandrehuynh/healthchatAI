@@ -23,6 +23,13 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false, cu
   // Silence detection timeout (in milliseconds)
   const SILENCE_TIMEOUT = 3000; // 3 seconds of silence before stopping
 
+  // Initialize accumulated transcript from external prop on mount
+  useEffect(() => {
+    if (currentTranscript && accumulatedTranscript === '') {
+      setAccumulatedTranscript(currentTranscript);
+    }
+  }, []);
+
   // Effect to detect when external transcript is cleared
   useEffect(() => {
     if (currentTranscript === '' && accumulatedTranscript !== '') {
@@ -30,7 +37,6 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false, cu
       setAccumulatedTranscript('');
       setInterimText('');
     }
-    // Remove the sync logic that was overwriting accumulated transcript
   }, [currentTranscript, accumulatedTranscript]);
 
   useEffect(() => {
@@ -80,6 +86,14 @@ export function VoiceInput({ onTranscriptChange, className, disabled = false, cu
                            !accumulatedTranscript.endsWith(' ') && 
                            cleanFinalTranscript.length > 0;
           const newAccumulated = accumulatedTranscript + (needsSpace ? ' ' : '') + cleanFinalTranscript;
+          
+          console.log('Voice Input Debug:', {
+            previousAccumulated: accumulatedTranscript,
+            newFinal: cleanFinalTranscript,
+            newAccumulated: newAccumulated,
+            interim: interimTranscript.trim()
+          });
+          
           setAccumulatedTranscript(newAccumulated);
           setInterimText(interimTranscript.trim());
           
