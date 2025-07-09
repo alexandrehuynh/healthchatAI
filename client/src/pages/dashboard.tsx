@@ -53,6 +53,7 @@ export default function Dashboard() {
   const [selectedScenario, setSelectedScenario] = useState<number>(1);
   const [userInput, setUserInput] = useState<string>("");
   const [testResult, setTestResult] = useState<TestResult | null>(null);
+  const [hasChanged, setHasChanged] = useState<boolean>(false);
 
   // Fetch prompt categories
   const { data: categories = [] } = useQuery<PromptCategory[]>({
@@ -88,6 +89,7 @@ export default function Dashboard() {
     },
     onSuccess: (data) => {
       setTestResult(data);
+      setHasChanged(false);
       queryClient.invalidateQueries({ queryKey: ["/api/testing-stats"] });
     },
     onError: (error) => {
@@ -100,6 +102,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (currentScenario) {
       setUserInput(currentScenario.userInput);
+      setHasChanged(false);
     }
   }, [currentScenario]);
 
@@ -269,7 +272,11 @@ export default function Dashboard() {
                   </div>
                   <Textarea
                     value={userInput}
-                    onChange={(e) => setUserInput(e.target.value)}
+                    onChange={(e) => {
+                      setUserInput(e.target.value);
+                      setHasChanged(true);
+                      setTestResult(null); // Clear previous results when input changes
+                    }}
                     placeholder="Type your custom patient query here, or edit the scenario text below..."
                     rows={4}
                     className="w-full text-gray-900 bg-white border-2 border-medical-blue-200 focus:border-medical-blue-500"
@@ -280,23 +287,28 @@ export default function Dashboard() {
                 </div>
 
                 {/* Test Button */}
-                <Button
-                  onClick={handleTestPrompt}
-                  disabled={!userInput.trim() || testPromptMutation.isPending}
-                  className="w-full bg-medical-blue-500 hover:bg-medical-blue-600"
-                >
-                  {testPromptMutation.isPending ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Generating AI Response & Running Safety Evaluation...
-                    </>
-                  ) : (
-                    <>
-                      <span className="mr-2">▶</span>
-                      Test Patient Input with AI
-                    </>
-                  )}
-                </Button>
+                <div className="border-t pt-4 mt-4">
+                  <Button
+                    onClick={handleTestPrompt}
+                    disabled={!userInput.trim() || testPromptMutation.isPending}
+                    className="w-full bg-medical-blue-500 hover:bg-medical-blue-600 text-white font-semibold py-3 text-lg shadow-lg"
+                  >
+                    {testPromptMutation.isPending ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                        Generating AI Response & Running Safety Evaluation...
+                      </>
+                    ) : (
+                      <>
+                        <span className="mr-3 text-xl">🤖</span>
+                        Generate AI Response & Test Safety
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-center text-xs text-gray-500 mt-2">
+                    Click this button to send your input to Gemini AI and get a safety evaluation
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
